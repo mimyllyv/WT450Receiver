@@ -51,13 +51,13 @@ Data WT450Receiver::decode(unsigned long value)
     Data data;
     data.houseCode = value >> 28;
 
-    uint8_t channel = value >> 24;
+    uint8_t channel = value >> 26;
     channel = channel & 0b0011;
-    data.channel = channel;
+    data.channel = channel + 1;
 
-    bool bat = value >> 23;
+    uint8_t bat = value >> 23;
     bat = bat & 0b0001;
-    data.batteryLow = bat;
+    data.batteryLow = (bat != 0);
 
     uint8_t sequence = value;
     sequence = sequence << 4;
