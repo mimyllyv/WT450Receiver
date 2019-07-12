@@ -15,9 +15,10 @@ struct Data
 class WT450Receiver
 {
 public:
-    WT450Receiver(int bufferSize = 10, bool keepOnlyNewest = true);
+    WT450Receiver(uint8_t digitalInterruptPin, unsigned int treshold = 250, unsigned int shortValue = 1000, unsigned int longValue = 2000, int bufferSize = 10, bool keepOnlyNewest = true);
 
-    void begin(uint8_t digitalInterruptPin, unsigned int treshold_ = 250, unsigned int shortValue_ = 1000, unsigned int longValue_ = 2000);
+    void begin();
+    void listenOnlyHouseAndChannel(uint8_t houseCode = 255, uint8_t channel = 255);
     void end();
     bool available();
     Data getData();
@@ -30,6 +31,8 @@ private:
     volatile static unsigned int treshold;
     volatile static unsigned int shortValue;
     volatile static unsigned int longValue;
+    volatile static uint8_t houseCode;
+    volatile static uint8_t channel;
 
     Data decode(unsigned long value);
     uint8_t digitalInterruptPin;

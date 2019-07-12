@@ -1,29 +1,31 @@
 #include <Arduino.h>
 #include <WT450Receiver.h>
 
-WT450Receiver *receiver = new WT450Receiver();
+WT450Receiver receiver = WT450Receiver(2);
 
 void setup()
 {
   Serial.begin(9600);
-  receiver->begin(2);
+  receiver.begin();
+//  receiver.listenOnlyHouseAndChannel(6);
 }
 
 void loop()
 {
-  if (receiver->available())
+  if (receiver.available())
   {
-    Data data = receiver->getData();
-    Serial.print("House code ");
+    Data data = receiver.getData();
+    Serial.print("House/channel ");
     Serial.print(data.houseCode);
-    Serial.print(", channel ");
+    Serial.print("/");
     Serial.print(data.channel);
-    Serial.print(", low bat ");
-    Serial.print(data.batteryLow);
-    Serial.print(", sequence ");
-    Serial.print(data.sequence);
-    Serial.print(", temperature ");
-    Serial.println(data.temperature);
+    Serial.print(", temp ");
+    Serial.print(data.temperature);
+    Serial.print(" C");
+    if(data.batteryLow) {
+      Serial.print(" (LOW BATTERY)");
+    } 
+    Serial.println();
   }
   else
   {

@@ -6,21 +6,32 @@ volatile unsigned long *WT450Receiver::value = NULL;
 volatile unsigned int WT450Receiver::treshold = 0;
 volatile unsigned int WT450Receiver::shortValue = 0;
 volatile unsigned int WT450Receiver::longValue = 0;
+volatile uint8_t WT450Receiver::houseCode = 255;
+volatile uint8_t WT450Receiver::channel = 255;
 
-WT450Receiver::WT450Receiver(int bufferSize, bool keepOnlyNewest)
+WT450Receiver::WT450Receiver(uint8_t digitalInterruptPin, unsigned int treshold, unsigned int shortValue, unsigned int longValue,int bufferSize, bool keepOnlyNewest)
 {
+    WT450Receiver::treshold = treshold;
+    WT450Receiver::shortValue = shortValue;
+    WT450Receiver::longValue = longValue;
+    this->digitalInterruptPin = digitalInterruptPin;
     WT450Receiver::keepOnlyNewest = keepOnlyNewest;
     WT450Receiver::bufferSize = bufferSize;
     value = new volatile unsigned long[bufferSize];
+    for(int i=0;i<bufferSize;i++) {
+        value[i] = 0;
+    }
 }
 
-void WT450Receiver::begin(uint8_t digitalInterruptPin, unsigned int treshold_, unsigned int shortValue_, unsigned int longValue_)
+void WT450Receiver::begin()
 {
-    treshold = treshold_;
-    shortValue = shortValue_;
-    longValue = longValue_;
-    this->digitalInterruptPin = digitalInterruptPin;
     attachInterrupt(digitalPinToInterrupt(digitalInterruptPin), handleInterrupt, CHANGE);
+}
+
+void WT450Receiver::listenOnlyHouseAndChannel(uint8_t houseCode, uint8_t channel)
+{
+    WT450Receiver::houseCode = houseCode;
+    WT450Receiver::channel = channel;
 }
 
 void WT450Receiver::end()
@@ -159,26 +170,41 @@ void WT450Receiver::handleInterrupt()
             if (datapos == 0)
             {
                 uint8_t houseCode = data >> 28;
-                uint8_t channel = data >> 24;
+
+                uint8_t channel = data >> 26;
                 channel = channel & 0b0011;
+                channel = channel + 1;
 
-                for (unsigned int i = 0; i < WT450Receiver::bufferSize; i++)
+                bool saveValue = true;
+                if(WT450Receiver::houseCode != 255 && WT450Receiver::houseCode != houseCode)
                 {
-                    if (WT450Receiver::keepOnlyNewest)
-                    {
-                        uint8_t houseCode_ = WT450Receiver::value[i] >> 28;
-                        uint8_t channel_ = WT450Receiver::value[i] >> 24;
-                        channel_ = channel_ & 0b0011;
+                    saveValue = false;
+                }
+                else if(WT450Receiver::channel != 255 && WT450Receiver::channel != channel)
+                {
+                    saveValue = false;
+                }
 
-                        if (houseCode == houseCode_ && channel == channel_)
-                        {
-                            WT450Receiver::value[i] = 0;
-                        }
-                    }
-                    if (WT450Receiver::value[i] == 0)
+                if(saveValue)
+                {
+                    for (unsigned int i = 0; i < WT450Receiver::bufferSize; i++)
                     {
-                        WT450Receiver::value[i] = data;
-                        break;
+                        if (WT450Receiver::keepOnlyNewest)
+                        {
+                            uint8_t houseCode_ = WT450Receiver::value[i] >> 28;
+                            uint8_t channel_ = WT450Receiver::value[i] >> 26;
+                            channel_ = channel_ & 0b0011;
+                            channel_ = channel_ + 1;
+                            if (houseCode == houseCode_ && channel == channel_)
+                            {
+                                WT450Receiver::value[i] = 0;
+                            }
+                        }
+                        if (WT450Receiver::value[i] == 0)
+                        {
+                            WT450Receiver::value[i] = data;
+                            break;
+                        }
                     }
                 }
 
